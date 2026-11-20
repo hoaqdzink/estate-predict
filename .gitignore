@@ -1,12 +1,18 @@
+# Môi trường và cache
 __pycache__/
 *.py[cod]
 .venv/
 venv/
 .env
 .ipynb_checkpoints/
+.ruff_cache/
 .DS_Store
 
-data/processed/*
-!data/processed/.gitkeep
-.ruff_cache/
-models/
+# Kế hoạch làm việc cá nhân
+plan.md
+
+# Tệp do notebook tự sinh ra (chạy notebooks/01_cleaning.ipynb để tạo lại)
+data/processed/
+models/*
+!models/learnt.pkl
+reports/

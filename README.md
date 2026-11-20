@@ -11,12 +11,18 @@ estate-predict/
 │   │   └── vietnam_housing_dirty.csv
 │   └── processed/              # Dữ liệu sau xử lý
 ├── notebooks/
-│   ├── 01_cleaning.ipynb       # Làm sạch dữ liệu
-│   ├── 02_eda.ipynb            # Phân tích khám phá, tiền xử lý
-│   ├── 03_modeling.ipynb       # Huấn luyện mô hình (chưa tạo)
-│   └── 04_evaluation.ipynb     # Đánh giá mô hình (chưa tạo)
+│   └── 01_cleaning.ipynb       # Làm sạch, tiền xử lý, mô hình hóa, đánh giá
+├── models/
+│   ├── learnt.pkl              # Mô hình tốt nhất (kèm pipeline và khoảng dự báo)
+│   └── all_models.pkl          # Tất cả mô hình đã huấn luyện
+├── app/
+│   └── streamlit_app.py        # Ứng dụng trình bày và định giá
 ├── reports/
-│   └── cleaning_log.csv        # Số dòng sau từng bước làm sạch
+│   ├── cleaning_log.csv        # Số bản ghi sau từng bước
+│   ├── best_params.csv         # Tham số tốt nhất (grid search)
+│   ├── cv_results.csv          # Kết quả cross-validation
+│   ├── metrics.csv             # Kết quả trên tập kiểm thử
+│   └── figures/                # Biểu đồ đánh giá
 ├── requirements.txt            # Danh sách thư viện Python
 ├── .gitignore
 └── README.md
@@ -26,24 +32,23 @@ estate-predict/
 |---|---|
 | `data/raw/` | Dữ liệu gốc, giữ nguyên không chỉnh sửa. File chính là `vietnam_housing_dirty.csv`. |
 | `data/processed/` | Dữ liệu đã làm sạch, do `notebooks/01_cleaning.ipynb` tạo ra. Không đưa lên Git. |
-| `notebooks/01_cleaning.ipynb` | Làm sạch dữ liệu thô, ghi ra `data/processed/clean.csv`. |
-| `notebooks/02_eda.ipynb` | Khám phá dữ liệu, biến đổi phân phối giá, vị trí, ngoại lai, tạo đặc trưng. |
-| `notebooks/03_modeling.ipynb` | Huấn luyện mô hình và lưu vào `models/`. |
-| `notebooks/04_evaluation.ipynb` | Tính RMSE, MAE, R², MAPE và lưu biểu đồ vào `reports/figures/`. |
-| `reports/` | Báo cáo làm sạch; biểu đồ và kết quả đánh giá sẽ lưu tại đây. |
+| `notebooks/01_cleaning.ipynb` | Toàn bộ quy trình: làm sạch (mục 1–4), tiền xử lý (mục 5), mô hình hóa (mục 6), đánh giá (mục 7). Tạo `data/processed/`, `models/`, `reports/`. |
+| `models/learnt.pkl` | Mô hình tốt nhất (Stacking), gồm pipeline tiền xử lý và tham số khoảng dự báo 95%. |
+| `app/streamlit_app.py` | Ứng dụng Streamlit: ý tưởng, dẫn dắt, phản biện, minh chứng, định giá trực tuyến. |
+| `reports/` | Nhật ký làm sạch, tham số tốt nhất, kết quả cross-validation và kiểm thử, biểu đồ. |
 | `requirements.txt` | Danh sách thư viện cần cài. |
-| `.gitignore` | Các file và thư mục Git bỏ qua (môi trường ảo, cache, dữ liệu xử lý). |
+| `.gitignore` | Các tệp Git bỏ qua: môi trường ảo, cache, `plan.md` và các tệp do notebook sinh ra (`data/processed/`, `models/`, `reports/`). |
 
-Luồng xử lý: `data/raw` → `01_cleaning` → `data/processed` → `02_eda` → `03_modeling` → `04_evaluation` → ứng dụng (Bước 4).
+Luồng xử lý: `data/raw` → `01_cleaning.ipynb` → `data/processed`, `models/learnt.pkl`, `reports/` → `app/streamlit_app.py`.
 
 ## Dữ liệu
 
 `data/raw/vietnam_housing_dirty.csv`: 3.500 tin rao bán nhà ở Hà Nội và TP.HCM, mô phỏng dữ liệu crawl thô **chưa làm sạch**.
 
-- Các cột về nhà và giá lấy từ dữ liệu thật do nhóm sinh viên ĐH Bách khoa Hà Nội crawl từ [alonhadat.com.vn](https://alonhadat.com.vn/), công bố tại [AndrewBui-AI-CS/House_price_prediction](https://github.com/AndrewBui-AI-CS/House_price_prediction) (file `src/clean data/full.csv`, commit 01/2022). Repo gốc không ghi giấy phép sử dụng.
+- Các cột về nhà và giá được trích từ tập dữ liệu công khai tại [AndrewBui-AI-CS/House_price_prediction](https://github.com/AndrewBui-AI-CS/House_price_prediction) (tệp `src/clean data/full.csv`, phiên bản tháng 01/2022). Theo mô tả của nhóm tác giả, dữ liệu được thu thập từ alonhadat.com.vn; thời điểm thu thập và giấy phép sử dụng không được công bố.
 - Dữ liệu được cố ý thêm 36 loại lỗi để luyện làm sạch: số dạng chữ, sai đơn vị, ngoại lai, Unicode, sai chính tả, sai cột, trùng lặp, dòng rác...
 - Các cột `url`, `title`, `address`, `posted_date`, `contact`, `scraped_at` **do máy sinh ra** (url, số điện thoại là giả), chỉ để giống dữ liệu crawl.
-- Đây là **giá rao bán** (không phải giá giao dịch thực), thu thập khoảng năm 2021.
+- Đây là **giá rao bán** (không phải giá giao dịch thực), thu thập trước tháng 01/2022.
 
 Các cột chính:
 
@@ -73,6 +78,10 @@ pip install -r requirements.txt
 
 ## Sử dụng
 
-Mở các notebook trong `notebooks/` theo thứ tự 01 → 04, chọn kernel `.venv`, rồi bấm **Run All**.
+Thực thi toàn bộ `notebooks/01_cleaning.ipynb` (kernel `.venv`, *Run All*, khoảng 3 phút), sau đó chạy ứng dụng:
+
+```bash
+streamlit run app/streamlit_app.py
+```
 
 Dữ liệu gốc nằm tại `data/raw/vietnam_housing_dirty.csv`.

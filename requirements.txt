@@ -3,11 +3,8 @@ numpy
 scipy
 scikit-learn
 lightgbm
-mapie
 matplotlib
-seaborn
 shap
-geopy
 joblib
 jupyter
 streamlit
