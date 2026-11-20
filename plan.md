@@ -18,55 +18,55 @@ Biến mục tiêu: `price_billion_vnd` (tỷ VNĐ)
 Đầu vào: `data/raw/vietnam_housing_dirty.csv`. Đầu ra: `data/processed/clean.csv`.
 
 ### 0.1 Lỗi ở mức file
-- [ ] Đọc file với `dtype=str` để giữ nguyên giá trị gốc
-- [ ] Bỏ các dòng tiêu đề bị lặp giữa file
-- [ ] Bỏ các dòng rỗng (toàn dấu phẩy)
-- [ ] Phát hiện các dòng lệch cột, sửa lại hoặc bỏ
+- [x] Đọc file với `dtype=str` để giữ nguyên giá trị gốc
+- [x] Bỏ các dòng tiêu đề bị lặp giữa file
+- [x] Bỏ các dòng rỗng (toàn dấu phẩy)
+- [x] Phát hiện các dòng lệch cột, sửa lại hoặc bỏ
 
 ### 0.2 Chuẩn hóa chữ
-- [ ] Chuẩn hóa Unicode về NFC
-- [ ] Bỏ khoảng trắng thừa, ký tự xuống dòng, tab
-- [ ] Bỏ thẻ HTML (`<b>`, `&nbsp;`), emoji, cụm quảng cáo (`CHÍNH CHỦ`, `!!!`)
-- [ ] Sửa lỗi font (mojibake)
-- [ ] Chuẩn hóa `city` về 2 giá trị: `Hà Nội`, `Hồ Chí Minh`
-- [ ] Chuẩn hóa `district`: bỏ tiền tố `Quận/Q./Huyện`, thêm dấu, sửa chính tả, đưa về một tên chuẩn
-- [ ] Sửa các dòng bị đổi chỗ `city` và `district`
-- [ ] Phát hiện quận không thuộc thành phố (dùng `address` hoặc `title` để kiểm tra)
-- [ ] Chuẩn hóa `house_type` về 2 giá trị: `Nhà mặt tiền`, `Nhà trong hẻm`
-- [ ] Chuẩn hóa 4 cột có/không về `True/False`
+- [x] Chuẩn hóa Unicode về NFC
+- [x] Bỏ khoảng trắng thừa, ký tự xuống dòng, tab
+- [x] Bỏ thẻ HTML (`<b>`, `&nbsp;`), emoji, cụm quảng cáo (`CHÍNH CHỦ`, `!!!`)
+- [x] Sửa lỗi font (mojibake)
+- [x] Chuẩn hóa `city` về 2 giá trị: `Hà Nội`, `Hồ Chí Minh`
+- [x] Chuẩn hóa `district`: bỏ tiền tố `Quận/Q./Huyện`, thêm dấu, sửa chính tả, đưa về một tên chuẩn
+- [x] Sửa các dòng bị đổi chỗ `city` và `district`
+- [x] Phát hiện quận không thuộc thành phố (dùng `address` hoặc `title` để kiểm tra)
+- [x] Chuẩn hóa `house_type` về 2 giá trị: `Nhà mặt tiền`, `Nhà trong hẻm`
+- [x] Chuẩn hóa 4 cột có/không về `True/False`
 
 ### 0.3 Chuyển chữ thành số
-- [ ] Gom các ký hiệu thiếu (`N/A`, `-`, `?`, `không rõ`, `null`...) về NaN
-- [ ] Viết hàm đọc giá: `tỷ`, `triệu`, `5 tỷ 200 triệu`, `8ty7`, `5.200.000.000`, `5.20e+09`, `$`, số full-width, khoảng giá, `triệu/m²`
-- [ ] Phát hiện giá ghi theo đơn vị triệu (ví dụ `6500`) và đổi về tỷ
-- [ ] Viết hàm đọc diện tích: `m2`, `m²`, `ha`, `4x12`, `50-55`, `~50`, `mét vuông`, số có số 0 ở đầu
-- [ ] Viết hàm đọc kích thước: dấu phẩy thập phân, đơn vị `m`, `cm`, `nở hậu`, `12/13`
-- [ ] Sửa các ô bị Excel đổi thành ngày (`5-Thg4` thành `4.5`)
-- [ ] Viết hàm đọc số tầng: `lầu`, `tầng`, `1 trệt 2 lầu`, `lửng`, `tum`, chữ (`hai`)
-- [ ] Viết hàm đọc số phòng ngủ: `PN`, `phòng`, `3-4`, `3+`
-- [ ] Viết hàm đọc độ rộng đường: `hẻm xe hơi`, `ba gác`
-- [ ] Chuẩn hóa `posted_date` về dạng ngày (xử lý `Hôm nay`, `Hôm qua`, ngày kiểu Mỹ, số ngày Excel, ngày không hợp lệ)
+- [x] Gom các ký hiệu thiếu (`N/A`, `-`, `?`, `không rõ`, `null`...) về NaN
+- [x] Viết hàm đọc giá: `tỷ`, `triệu`, `5 tỷ 200 triệu`, `8ty7`, `5.200.000.000`, `5.20e+09`, `$`, số full-width, khoảng giá, `triệu/m²`
+- [x] Phát hiện giá ghi theo đơn vị triệu (ví dụ `6500`) và đổi về tỷ
+- [x] Viết hàm đọc diện tích: `m2`, `m²`, `ha`, `4x12`, `50-55`, `~50`, `mét vuông`, số có số 0 ở đầu
+- [x] Viết hàm đọc kích thước: dấu phẩy thập phân, đơn vị `m`, `cm`, `nở hậu`, `12/13`
+- [x] Sửa các ô bị Excel đổi thành ngày (`5-Thg4` thành `4.5`)
+- [x] Viết hàm đọc số tầng: `lầu`, `tầng`, `1 trệt 2 lầu`, `lửng`, `tum`, chữ (`hai`)
+- [x] Viết hàm đọc số phòng ngủ: `PN`, `phòng`, `3-4`, `3+`
+- [x] Viết hàm đọc độ rộng đường: `hẻm xe hơi`, `ba gác`
+- [x] Chuẩn hóa `posted_date` về dạng ngày (xử lý `Hôm nay`, `Hôm qua`, ngày kiểu Mỹ, số ngày Excel, ngày không hợp lệ)
 
 ### 0.4 Giá trị vô lý
-- [ ] Số âm, 0 tầng, quá nhiều tầng, quá nhiều phòng: đổi thành NaN
-- [ ] Giá `0`, `-1`, `999`, `Liên hệ`, `Thỏa thuận`: đổi thành NaN
-- [ ] Diện tích gõ thừa số 0: phát hiện bằng so sánh với `width × length` hoặc với `title`
-- [ ] Đảo lại các dòng có chiều ngang lớn hơn chiều dài
-- [ ] Kiểm tra giá trong `title` có khớp với cột giá không
+- [x] Số âm, 0 tầng, quá nhiều tầng, quá nhiều phòng: đổi thành NaN
+- [x] Giá `0`, `-1`, `999`, `Liên hệ`, `Thỏa thuận`: đổi thành NaN
+- [x] Diện tích gõ thừa số 0: phát hiện bằng so sánh với `width × length` hoặc với `title` (còn 8 căn không có thông tin đối chiếu, để Bước 1.4 xử lý)
+- [x] Đảo lại các dòng có chiều ngang lớn hơn chiều dài
+- [x] Kiểm tra giá trong `title` có khớp với cột giá không
 
 ### 0.5 Trùng lặp
-- [ ] Bỏ dòng trùng y hệt (trừ cột `order`)
-- [ ] Bỏ tin trùng theo `url` (sau khi bỏ `?utm...`, `#...`)
-- [ ] Bỏ tin đăng lại: cùng quận, diện tích, số tầng, số phòng và giá lệch dưới 5%
+- [x] Bỏ dòng trùng y hệt (trừ cột `order`)
+- [x] Bỏ tin trùng theo `url` (sau khi bỏ `?utm...`, `#...`)
+- [x] Bỏ tin đăng lại: cùng quận, diện tích, số tầng, số phòng và giá lệch dưới 5%
 
 ### 0.6 Giá trị thiếu
-- [ ] Bỏ các dòng không có giá
-- [ ] Điền thiếu cho biến số bằng trung vị theo quận
-- [ ] Điền thiếu cho biến phân loại bằng giá trị phổ biến nhất hoặc nhãn `Không rõ`
+- [x] Bỏ các dòng không có giá
+- [ ] Điền thiếu cho biến số bằng trung vị theo quận (chuyển sang pipeline ở Bước 2, để tránh rò rỉ dữ liệu test)
+- [ ] Điền thiếu cho biến phân loại bằng giá trị phổ biến nhất hoặc nhãn `Không rõ` (chuyển sang Bước 2)
 
 ### 0.7 Kết quả
-- [ ] Bảng số dòng trước và sau từng bước làm sạch
-- [ ] Lưu `data/processed/clean.csv`
+- [x] Bảng số dòng trước và sau từng bước làm sạch
+- [x] Lưu `data/processed/clean.csv`
 
 ---
 
