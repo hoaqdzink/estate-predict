@@ -13,7 +13,7 @@ Biến mục tiêu: `price_billion_vnd` (tỷ VNĐ)
 
 ---
 
-## Bước 0: Làm sạch dữ liệu (`src/preprocessing.py`)
+## Bước 0: Làm sạch dữ liệu (`notebooks/01_cleaning.ipynb`)
 
 Đầu vào: `data/raw/vietnam_housing_dirty.csv`. Đầu ra: `data/processed/clean.csv`.
 
@@ -70,7 +70,7 @@ Biến mục tiêu: `price_billion_vnd` (tỷ VNĐ)
 
 ---
 
-## Bước 1: EDA và tiền xử lý (`notebooks/eda.ipynb`)
+## Bước 1: EDA và tiền xử lý (`notebooks/02_eda.ipynb`)
 
 ### 1.1 Khám phá dữ liệu
 - [ ] Thống kê mô tả các cột
@@ -105,7 +105,7 @@ Biến mục tiêu: `price_billion_vnd` (tỷ VNĐ)
 
 ---
 
-## Bước 2: Mô hình hóa (`src/train.py`)
+## Bước 2: Mô hình hóa (`notebooks/03_modeling.ipynb`)
 
 - [ ] Chia train/test 80/20, cố định `random_state`
 - [ ] Dựng pipeline `ColumnTransformer` (scaler cho biến số, encoder cho biến phân loại)
@@ -120,7 +120,7 @@ Biến mục tiêu: `price_billion_vnd` (tỷ VNĐ)
 
 ---
 
-## Bước 3: Đánh giá (`src/evaluate.py`)
+## Bước 3: Đánh giá (`notebooks/04_evaluation.ipynb`)
 
 - [ ] Đổi giá dự đoán về đơn vị tỷ VNĐ trước khi tính chỉ số
 - [ ] Tính RMSE, MAE, R², MAPE trên tập test

@@ -11,18 +11,12 @@ estate-predict/
 │   │   └── vietnam_housing_dirty.csv
 │   └── processed/              # Dữ liệu sau xử lý
 ├── notebooks/
-│   └── eda.ipynb               # Phân tích khám phá dữ liệu
-├── src/
-│   ├── __init__.py
-│   ├── preprocessing.py        # Làm sạch và biến đổi dữ liệu
-│   ├── train.py                # Huấn luyện mô hình
-│   ├── evaluate.py             # Đánh giá mô hình
-│   └── predict.py              # Dự đoán giá nhà
-├── models/                     # Lưu các mô hình đã huấn luyện
+│   ├── 01_cleaning.ipynb       # Làm sạch dữ liệu
+│   ├── 02_eda.ipynb            # Phân tích khám phá, tiền xử lý
+│   ├── 03_modeling.ipynb       # Huấn luyện mô hình (chưa tạo)
+│   └── 04_evaluation.ipynb     # Đánh giá mô hình (chưa tạo)
 ├── reports/
-│   └── figures/                # Biểu đồ và kết quả đánh giá
-├── app/
-│   └── streamlit_app.py        # Giao diện dự báo giá nhà
+│   └── cleaning_log.csv        # Số dòng sau từng bước làm sạch
 ├── requirements.txt            # Danh sách thư viện Python
 ├── .gitignore
 └── README.md
@@ -31,19 +25,16 @@ estate-predict/
 | Thư mục / File | Vai trò |
 |---|---|
 | `data/raw/` | Dữ liệu gốc, giữ nguyên không chỉnh sửa. File chính là `vietnam_housing_dirty.csv`. |
-| `data/processed/` | Dữ liệu đã làm sạch, do `src/preprocessing.py` tạo ra. Không đưa lên Git. |
-| `notebooks/eda.ipynb` | Khám phá dữ liệu: phân phối, giá trị thiếu, tương quan giữa các biến. |
-| `src/preprocessing.py` | Đọc dữ liệu gốc, xử lý giá trị thiếu, mã hóa biến phân loại, chuẩn hóa, ghi ra `data/processed/`. |
-| `src/train.py` | Huấn luyện mô hình trên dữ liệu đã xử lý và lưu mô hình vào `models/`. |
-| `src/evaluate.py` | Tính các chỉ số đánh giá (MAE, RMSE, R²) và lưu biểu đồ vào `reports/figures/`. |
-| `src/predict.py` | Nạp mô hình đã lưu và dự đoán giá cho dữ liệu mới. |
-| `models/` | Các file mô hình đã huấn luyện (ví dụ `.joblib`). Không đưa lên Git. |
-| `reports/figures/` | Biểu đồ EDA và kết quả đánh giá mô hình. |
-| `app/streamlit_app.py` | Giao diện web để người dùng nhập thông tin nhà và xem giá dự đoán. |
+| `data/processed/` | Dữ liệu đã làm sạch, do `notebooks/01_cleaning.ipynb` tạo ra. Không đưa lên Git. |
+| `notebooks/01_cleaning.ipynb` | Làm sạch dữ liệu thô, ghi ra `data/processed/clean.csv`. |
+| `notebooks/02_eda.ipynb` | Khám phá dữ liệu, biến đổi phân phối giá, vị trí, ngoại lai, tạo đặc trưng. |
+| `notebooks/03_modeling.ipynb` | Huấn luyện mô hình và lưu vào `models/`. |
+| `notebooks/04_evaluation.ipynb` | Tính RMSE, MAE, R², MAPE và lưu biểu đồ vào `reports/figures/`. |
+| `reports/` | Báo cáo làm sạch; biểu đồ và kết quả đánh giá sẽ lưu tại đây. |
 | `requirements.txt` | Danh sách thư viện cần cài. |
-| `.gitignore` | Các file và thư mục Git bỏ qua (môi trường ảo, cache, dữ liệu xử lý, mô hình). |
+| `.gitignore` | Các file và thư mục Git bỏ qua (môi trường ảo, cache, dữ liệu xử lý). |
 
-Luồng xử lý: `data/raw` → `preprocessing.py` → `data/processed` → `train.py` → `models` → `evaluate.py` / `predict.py` / `streamlit_app.py`.
+Luồng xử lý: `data/raw` → `01_cleaning` → `data/processed` → `02_eda` → `03_modeling` → `04_evaluation` → ứng dụng (Bước 4).
 
 ## Dữ liệu
 
@@ -82,12 +73,6 @@ pip install -r requirements.txt
 
 ## Sử dụng
 
-```bash
-python src/preprocessing.py
-python src/train.py
-python src/evaluate.py
-python src/predict.py
-streamlit run app/streamlit_app.py
-```
+Mở các notebook trong `notebooks/` theo thứ tự 01 → 04, chọn kernel `.venv`, rồi bấm **Run All**.
 
 Dữ liệu gốc nằm tại `data/raw/vietnam_housing_dirty.csv`.

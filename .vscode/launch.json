@@ -2,27 +2,10 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Bước 0: Làm sạch dữ liệu",
-      "type": "debugpy",
-      "request": "launch",
-      "module": "src.preprocessing",
-      "cwd": "${workspaceFolder}",
-      "console": "integratedTerminal"
-    },
-    {
       "name": "Chạy file đang mở",
       "type": "debugpy",
       "request": "launch",
       "program": "${file}",
-      "cwd": "${workspaceFolder}",
-      "console": "integratedTerminal"
-    },
-    {
-      "name": "Mở ứng dụng Streamlit",
-      "type": "debugpy",
-      "request": "launch",
-      "module": "streamlit",
-      "args": ["run", "app/streamlit_app.py"],
       "cwd": "${workspaceFolder}",
       "console": "integratedTerminal"
     }

@@ -8,5 +8,5 @@ venv/
 
 data/processed/*
 !data/processed/.gitkeep
-models/*
-!models/.gitkeep
+.ruff_cache/
+models/
