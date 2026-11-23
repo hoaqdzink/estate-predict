@@ -38,10 +38,10 @@ def to_model_input(df):
 
 @st.cache_resource
 def explainers():
-    """Nền so sánh chung: 300 bản ghi của tập dữ liệu sau tiền xử lý."""
+    """Nền so sánh chung: 100 bản ghi của tập dữ liệu sau tiền xử lý."""
     import shap
     p = parts()
-    bg = p["prep"].transform(to_model_input(data.features().sample(300, random_state=0)))
+    bg = p["prep"].transform(to_model_input(data.features().sample(100, random_state=0)))
     out = []
     for est in p["stack"].estimators_:
         if hasattr(est, "coef_"):

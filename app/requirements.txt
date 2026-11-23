@@ -1,13 +1,13 @@
-# Thư viện cho Streamlit Community Cloud (chỉ phần ứng dụng).
+# Thư viện cho Streamlit Community Cloud (chỉ phần ứng dụng), Python 3.14.
 # Phiên bản được cố định trùng với môi trường đã huấn luyện mô hình,
 # để models/learnt.pkl và reports/artifacts.pkl nạp lại được.
-streamlit==1.50.0
-altair==5.5.0
-pandas==2.3.3
-numpy==2.0.2
-scipy==1.13.1
-scikit-learn==1.6.1
-lightgbm==4.6.0
-shap==0.49.1
-matplotlib==3.9.4
-joblib==1.5.3
+streamlit==1.67.0
+altair==6.3.0
+pandas==3.1.1
+numpy==2.5.5
+scipy==1.18.1
+scikit-learn==1.9.1
+lightgbm==4.7.0
+shap==0.54.1
+matplotlib==3.11.2
+joblib==1.6.0

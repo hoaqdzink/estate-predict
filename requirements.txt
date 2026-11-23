@@ -1,11 +1,5 @@
-pandas
-numpy
-scipy
-scikit-learn
-lightgbm
-matplotlib
-shap
-joblib
+# Toàn bộ dự án (notebook, Streamlit, Django), Python 3.14.
+-r app/requirements.txt
 jupyter
-streamlit
-django>=4.2,<5
+ipykernel
+django>=5.2,<7

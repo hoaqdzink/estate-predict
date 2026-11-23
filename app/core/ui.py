@@ -135,6 +135,26 @@ def _patch_dataframe():
     st.dataframe = lambda *a, **k: dataframe(st._main, *a, **k)
 
 
+def _patch_altair_chart():
+    """Streamlit mới dùng width="stretch" thay cho use_container_width; giữ tương thích cả hai."""
+    import inspect
+    if getattr(DeltaGenerator.altair_chart, "_vn", False):
+        return
+    original = DeltaGenerator.altair_chart
+    has_width = "width" in inspect.signature(original).parameters
+
+    def altair_chart(self, chart, *args, use_container_width=None, **kwargs):
+        if has_width and use_container_width is not None:
+            kwargs.setdefault("width", "stretch" if use_container_width else "content")
+        elif use_container_width is not None:
+            kwargs["use_container_width"] = use_container_width
+        return original(self, chart, *args, **kwargs)
+
+    altair_chart._vn = True
+    DeltaGenerator.altair_chart = altair_chart
+    st.altair_chart = lambda *a, **k: altair_chart(st._main, *a, **k)
+
+
 def setup():
     st.markdown(CSS, unsafe_allow_html=True)
     try:
@@ -150,6 +170,7 @@ def setup():
         plt.cycler(color=PALETTE), "figure.facecolor": "white", "axes.facecolor": "white",
     })
     _patch_dataframe()
+    _patch_altair_chart()
 
 
 def hero(tag, title, subtitle, chips=()):

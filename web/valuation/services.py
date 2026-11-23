@@ -64,7 +64,7 @@ def _original_feature(tcol):
 def _explainers():
     import shap
     prep, stack = _parts()
-    bg = prep.transform(build_input(features().sample(300, random_state=0)))
+    bg = prep.transform(build_input(features().sample(100, random_state=0)))
     out = []
     for est in stack.estimators_:
         if hasattr(est, "coef_"):

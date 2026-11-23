@@ -17,7 +17,7 @@ Dự án gồm ba phần, dùng chung một mô hình (`models/learnt.pkl`):
 ### Chạy nhanh
 
 ```bash
-python3 -m venv .venv && source .venv/bin/activate      # tạo và bật môi trường ảo
+python3.14 -m venv .venv && source .venv/bin/activate   # tạo và bật môi trường ảo (Python 3.14)
 pip install -r requirements.txt                          # cài thư viện
 jupyter nbconvert --to notebook --execute notebooks/01_cleaning.ipynb --inplace --ExecutePreprocessor.timeout=1800
 streamlit run app/streamlit_app.py                       # http://localhost:8501
@@ -32,7 +32,7 @@ Chi tiết từng bước ở các mục dưới.
 
 | Thành phần | Yêu cầu |
 |---|---|
-| Python | 3.9 trở lên (đã kiểm thử với Python 3.9.6) |
+| Python | **3.14** (đã kiểm thử với Python 3.14.10, cùng bản với Streamlit Community Cloud) |
 | Hệ điều hành | macOS, Linux hoặc Windows |
 | Dung lượng | khoảng 1 GB cho môi trường ảo và thư viện |
 | Kết nối mạng | chỉ cần khi cài thư viện; notebook và ứng dụng chạy không cần mạng |
@@ -60,17 +60,21 @@ Hoặc giải nén tệp dự án rồi mở Terminal tại thư mục `estate-p
 
 ### Bước 2. Tạo môi trường ảo
 
+Mô hình được lưu bằng các phiên bản thư viện cố định trong `app/requirements.txt`, nên cần đúng **Python 3.14** để các bản này cài được dạng đóng gói sẵn.
+
+Nếu máy chưa có Python 3.14, có thể cài nhanh bằng [uv](https://docs.astral.sh/uv/): `pip install uv`, rồi `uv python install 3.14`.
+
 macOS / Linux:
 
 ```bash
-python3 -m venv .venv
+python3.14 -m venv .venv          # hoặc: uv venv --python 3.14 .venv
 source .venv/bin/activate
 ```
 
 Windows (PowerShell):
 
 ```powershell
-python -m venv .venv
+py -3.14 -m venv .venv
 .venv\Scripts\Activate.ps1
 ```
 
@@ -169,7 +173,7 @@ Repo đã có sẵn những gì Streamlit Cloud cần: `app/requirements.txt` (t
 1. Đăng nhập [share.streamlit.io](https://share.streamlit.io) bằng tài khoản GitHub.
 2. Chọn **Create app** → **Deploy a public app from GitHub**.
 3. Điền: Repository `hoaqdzink/estate-predict`, Branch `main`, Main file path `app/streamlit_app.py`.
-4. Mở **Advanced settings**, chọn **Python 3.11**.
+4. Mở **Advanced settings**, giữ **Python 3.14** (bản mặc định). Thư viện trong `app/requirements.txt` được cố định cho Python 3.14; chọn bản Python khác sẽ phải biên dịch thư viện từ mã nguồn và rất lâu.
 5. Bấm **Deploy**. Lần đầu cài thư viện mất vài phút.
 
 Sau khi chạy lại notebook, cần commit lại 5 tệp dữ liệu trên thì bản triển khai mới cập nhật kết quả.
@@ -215,7 +219,8 @@ Khi triển khai thật, đặt `DJANGO_DEBUG=0`, `DJANGO_SECRET_KEY` và `DJANG
 | `Library not loaded: @rpath/libomp.dylib` (macOS) | Thiếu OpenMP cho LightGBM. Chạy `brew install libomp`. |
 | `ModuleNotFoundError` | Môi trường ảo chưa được kích hoạt, hoặc notebook dùng sai kernel. Kích hoạt `.venv` (mục 2, bước 2) và chọn kernel `.venv` trong notebook. |
 | `command not found: streamlit`, `jupyter` hoặc `ModuleNotFoundError: django` | Môi trường ảo chưa được kích hoạt. Hoặc chạy trực tiếp `.venv/bin/streamlit run app/streamlit_app.py`. |
-| Cảnh báo `NotOpenSSLWarning` (macOS) | Do bản Python có sẵn của macOS dùng LibreSSL. Không ảnh hưởng tới kết quả. |
+| Lỗi khi nạp `learnt.pkl` (`ModuleNotFoundError`, `AttributeError` trong sklearn) | Phiên bản thư viện khác với lúc huấn luyện. Cài đúng `requirements.txt` trên Python 3.14, hoặc chạy lại notebook để huấn luyện lại bằng thư viện hiện có. |
+| Build trên Streamlit Cloud rất lâu, log có dòng `Building numpy`, `Building scipy`... | App được tạo với bản Python khác 3.14. Xóa app và tạo lại, giữ Python 3.14 ở Advanced settings. |
 | Notebook báo lỗi ở một ô giữa chừng | Các ô phải chạy tuần tự. Chọn *Restart Kernel* rồi *Run All*. |
 | `Address already in use` / cổng 8501 hoặc 8000 đang bận | Ứng dụng đã chạy ở Terminal khác. Mở thẳng địa chỉ trên trình duyệt, hoặc dừng tiến trình cũ, hoặc chạy cổng khác: `streamlit run app/streamlit_app.py --server.port 8502`, `python web/manage.py runserver 8001`. |
 | Trang Streamlit trắng hoặc chỉ hiện khung xám | Trang đang tính toán lần đầu (nạp mô hình, SHAP). Chờ vài giây hoặc tải lại trang. |
