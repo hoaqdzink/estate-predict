@@ -11,8 +11,13 @@ venv/
 # Kế hoạch làm việc cá nhân
 plan.md
 
-# Tệp do notebook tự sinh ra (chạy notebooks/01_cleaning.ipynb để tạo lại)
-data/processed/
+# Tệp do notebook tự sinh ra (chạy notebooks/01_cleaning.ipynb để tạo lại).
+# Giữ lại các tệp ứng dụng Streamlit cần, để triển khai lên Streamlit Community Cloud.
+data/processed/*
+!data/processed/clean.csv
+!data/processed/features.csv
 models/*
 !models/learnt.pkl
-reports/
+reports/*
+!reports/artifacts.pkl
+!reports/cleaning_log.csv
