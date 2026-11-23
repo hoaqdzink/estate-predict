@@ -162,6 +162,20 @@ Giao diện (màu, phông chữ) cấu hình trong `.streamlit/config.toml` và 
 
 ---
 
+### Triển khai lên Streamlit Community Cloud
+
+Repo đã có sẵn những gì Streamlit Cloud cần: `app/requirements.txt` (thư viện cố định phiên bản trùng với lúc huấn luyện), `packages.txt` (thư viện hệ thống cho LightGBM), `.streamlit/config.toml` (giao diện), và các tệp dữ liệu ứng dụng đọc (`models/learnt.pkl`, `data/processed/clean.csv`, `data/processed/features.csv`, `reports/artifacts.pkl`, `reports/cleaning_log.csv`).
+
+1. Đăng nhập [share.streamlit.io](https://share.streamlit.io) bằng tài khoản GitHub.
+2. Chọn **Create app** → **Deploy a public app from GitHub**.
+3. Điền: Repository `hoaqdzink/estate-predict`, Branch `main`, Main file path `app/streamlit_app.py`.
+4. Mở **Advanced settings**, chọn **Python 3.11**.
+5. Bấm **Deploy**. Lần đầu cài thư viện mất vài phút.
+
+Sau khi chạy lại notebook, cần commit lại 5 tệp dữ liệu trên thì bản triển khai mới cập nhật kết quả.
+
+---
+
 ## 5. Chạy web Django
 
 Ngoài ứng dụng Streamlit (dùng để trình bày), dự án có một web Django dùng chung mô hình `models/learnt.pkl`, gồm trang định giá và API JSON. Web không dùng cơ sở dữ liệu.
@@ -248,7 +262,7 @@ Nội dung notebook:
 | 7 | Đánh giá: RMSE, MAE, R², MAPE trên tập kiểm thử, sai số theo phân khúc, SHAP, khoảng dự báo 95%, kết luận |
 | 8 | Lưu kết quả trung gian cho ứng dụng (`reports/artifacts.pkl`) |
 
-**Tệp được Git bỏ qua** (`.gitignore`): môi trường ảo, cache, `plan.md`, và các tệp do notebook sinh ra trong `data/processed/`, `models/` (trừ `learnt.pkl`), `reports/`.
+**Tệp được Git bỏ qua** (`.gitignore`): môi trường ảo, cache, `plan.md`, và các tệp do notebook sinh ra, trừ 5 tệp ứng dụng Streamlit cần (`models/learnt.pkl`, `data/processed/clean.csv`, `data/processed/features.csv`, `reports/artifacts.pkl`, `reports/cleaning_log.csv`).
 
 ---
 
