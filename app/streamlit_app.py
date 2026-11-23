@@ -56,6 +56,112 @@ AMENITY_NAMES = {"n_schools": "Trường học", "n_health": "Bệnh viện, ph�
                  "n_parks": "Công viên", "n_transit": "Trạm xe buýt, ga"}
 
 
+# ---------------------------------------------------------------------------
+# Cấu trúc mô hình và giải thích từng dự báo
+# ---------------------------------------------------------------------------
+FEATURE_LABELS = {
+    "area_m2": "Diện tích", "width_m": "Chiều ngang", "length_m": "Chiều dài", "road_width_m": "Độ rộng đường",
+    "floors": "Số tầng", "bedrooms": "Số phòng ngủ", "width_length_ratio": "Tỷ lệ ngang/dài",
+    "dist_center_km": "Khoảng cách tới trung tâm", "lat": "Vĩ độ", "lon": "Kinh độ",
+    "n_schools": "Trường học xung quanh", "n_health": "Y tế xung quanh", "n_markets": "Chợ, siêu thị xung quanh",
+    "n_parks": "Công viên xung quanh", "n_transit": "Trạm giao thông xung quanh",
+    "has_dining_room": "Phòng ăn", "has_kitchen": "Nhà bếp", "has_terrace": "Sân thượng", "has_parking": "Chỗ đỗ ô tô",
+    "city": "Thành phố", "district": "Quận/huyện", "house_type": "Loại nhà",
+}
+MODEL_LABELS = {"Ridge": "Ridge", "Lasso": "Lasso", "ElasticNet": "ElasticNet",
+                "Gradient_Boosting": "Gradient Boosting", "LightGBM": "LightGBM"}
+INPUT_COLS = learnt["features"]["num"] + learnt["features"]["bool"] + learnt["features"]["cat"]
+PIPE = learnt["model"].regressor_
+PREP, STACK = PIPE.named_steps["prep"], PIPE.named_steps["model"]
+BASE_NAMES = [n for n, _ in STACK.estimators]
+META_W, META_B = STACK.final_estimator_.coef_, float(STACK.final_estimator_.intercept_)
+TCOLS = list(PREP.get_feature_names_out())
+
+
+def original_feature(tcol):
+    """'num__area_m2' -> 'area_m2'; 'cat__district_Quận 1' -> 'district'."""
+    group, name = tcol.split("__", 1)
+    if group == "cat":
+        return next(f for f in learnt["features"]["cat"] if name.startswith(f + "_"))
+    return name
+
+
+def to_model_input(df):
+    X = df[INPUT_COLS].copy()
+    X[learnt["features"]["bool"]] = X[learnt["features"]["bool"]].astype(float)
+    return X.astype({c: float for c in learnt["features"]["num"]})
+
+
+@st.cache_resource
+def build_explainers():
+    """Nền so sánh: 300 bản ghi của tập dữ liệu, đã qua tiền xử lý."""
+    import shap
+    bg = PREP.transform(to_model_input(features.sample(300, random_state=0)))
+    explainers = []
+    for est in STACK.estimators_:
+        if hasattr(est, "coef_"):        # mô hình tuyến tính: SHAP = hệ số × (x − trung bình)
+            explainers.append(("linear", est, bg.mean(axis=0), float(est.predict(bg).mean())))
+        else:                            # mô hình cây: TreeExplainer, cùng nền so sánh
+            ex = shap.TreeExplainer(est, data=bg, feature_perturbation="interventional")
+            explainers.append(("tree", ex, None, float(np.ravel(ex.expected_value)[0])))
+    return explainers
+
+
+def decompose(X):
+    """Tách một dự báo thành từng bước tính của mô hình Stacking (thang log1p)."""
+    Xt = PREP.transform(X)
+    base_log = np.array([est.predict(Xt)[0] for est in STACK.estimators_])
+    final_log = META_B + float(base_log @ META_W)
+    return Xt, base_log, final_log
+
+
+def explain(Xt):
+    """Giá trị SHAP của cả khối Stacking = tổng có trọng số SHAP của từng mô hình con."""
+    phi, base = np.zeros(Xt.shape[1]), META_B
+    for w, (kind, obj, mean, ev) in zip(META_W, build_explainers()):
+        p = obj.coef_ * (Xt[0] - mean) if kind == "linear" else np.ravel(obj.shap_values(Xt))
+        phi += w * p
+        base += w * ev
+    grouped = pd.Series(phi, index=TCOLS).groupby(original_feature).sum()
+    return base, grouped.sort_values(key=np.abs, ascending=False)
+
+
+def shap_waterfall(base, contrib, values, top=8):
+    """Biểu đồ thác nước trên đơn vị tỷ VNĐ: cộng dần từng đóng góp trên thang log rồi đổi về giá."""
+    head = contrib.iloc[:top]
+    rest = contrib.iloc[top:].sum()
+    items = list(head.items()) + ([("Các thuộc tính khác", rest)] if len(contrib) > top else [])
+    cum, rows = base, []
+    for name, v in items:
+        before, cum = cum, cum + v
+        label = FEATURE_LABELS.get(name, name)
+        if name in values:
+            label += f" = {values[name]}"
+        rows.append((label, np.expm1(before), np.expm1(cum) - np.expm1(before), v))
+    fig, ax = plt.subplots(figsize=(9, 0.45 * len(rows) + 1.6))
+    for i, (label, start, delta, _) in enumerate(rows):
+        ax.barh(i, delta, left=start, color="#C44E52" if delta < 0 else "#55A868")
+        ax.text(start + delta + (0.05 if delta >= 0 else -0.05), i, f"{delta:+.2f}",
+                va="center", ha="left" if delta >= 0 else "right", fontsize=8)
+    ax.set_yticks(range(len(rows)), [r[0] for r in rows], fontsize=8)
+    ax.invert_yaxis()
+    ax.axvline(np.expm1(base), color="gray", linestyle=":", label=f"Giá tham chiếu {np.expm1(base):.2f} tỷ")
+    ax.axvline(np.expm1(cum), color="#4C72B0", linestyle="--", label=f"Giá dự báo {np.expm1(cum):.2f} tỷ")
+    ax.set_xlabel("Giá (tỷ VNĐ)")
+    ax.legend(loc="lower right", fontsize=8)
+    plt.tight_layout()
+    table = pd.DataFrame([{"Thuộc tính": r[0], "Đóng góp (tỷ)": r[2], "Ảnh hưởng (%)": (np.exp(r[3]) - 1) * 100}
+                          for r in rows])
+    return fig, table
+
+
+def stacking_table(base_log):
+    t = pd.DataFrame({"Mô hình con": [MODEL_LABELS[n] for n in BASE_NAMES],
+                      "Dự báo (log1p)": base_log, "Dự báo (tỷ)": np.expm1(base_log),
+                      "Trọng số meta": META_W, "Đóng góp (log1p)": base_log * META_W})
+    return t
+
+
 def show_figure(name, caption):
     path = FIG_DIR / name
     if path.exists():
@@ -68,7 +174,7 @@ def show_figure(name, caption):
 # Thanh điều hướng
 # ---------------------------------------------------------------------------
 PAGES = ["1. Ý tưởng", "2. Dẫn dắt: dữ liệu và tiền xử lý", "3. Phản biện: các lựa chọn và hạn chế",
-         "4. Minh chứng: kết quả mô hình", "5. Định giá trực tuyến"]
+         "4. Minh chứng: kết quả mô hình", "5. Mô hình huấn luyện (learnt.pkl)", "6. Định giá trực tuyến"]
 st.sidebar.title("Đề tài 06")
 st.sidebar.caption("Dự báo giá bất động sản đô thị\n\nUrban Real Estate Valuation & Hedonic Pricing")
 page = st.sidebar.radio("Nội dung", PAGES)
@@ -109,7 +215,7 @@ trung tâm hơn 1 km) đóng góp một phần vào giá. Mô hình hồi quy ư
 | Bước 1. Tiền xử lý | Mất cân bằng dữ liệu, phân phối giá, Box-Cox/Log1p, tọa độ và khoảng cách tới trung tâm, tiện ích xung quanh (OpenStreetMap), ngoại lai IQR/Mahalanobis | Tập đặc trưng |
 | Bước 2. Mô hình hóa | Trích chọn thuộc tính, grid search cross-validation cho Ridge, Lasso, ElasticNet, Gradient Boosting, LightGBM, Stacking | `learnt.pkl` |
 | Bước 3. Đánh giá | RMSE, MAE, R², MAPE trên tập kiểm thử độc lập; sai số theo phân khúc; giải thích SHAP | Bảng so sánh |
-| Bước 4. Ứng dụng | Trang định giá trực tuyến kèm khoảng dự báo 95% | Ứng dụng này |
+| Bước 4. Ứng dụng | Mô hình huấn luyện được và cách dùng để dự báo; định giá trực tuyến kèm khoảng dự báo 95% và giải thích từng dự báo | Ứng dụng này |
 """)
 
 
@@ -301,7 +407,122 @@ elif page == PAGES[3]:
 
 
 # ---------------------------------------------------------------------------
-# 5. Định giá trực tuyến
+# 5. Mô hình huấn luyện
+# ---------------------------------------------------------------------------
+elif page == PAGES[4]:
+    st.title("Mô hình huấn luyện được và cách dùng để dự báo")
+
+    st.header("5.1 Mô hình là gì")
+    st.markdown(f"""
+Mô hình được chọn là **{learnt['model_name']} Ensemble**, huấn luyện trên {str(f"{learnt['trained_on']:,}").replace(',', '.')} bản ghi.
+Mô hình gồm ba tầng xếp chồng:
+
+1. **Tiền xử lý:** điền giá trị thiếu (trung vị cho biến số, giá trị phổ biến nhất cho biến phân loại), chuẩn hóa
+   biến số, mã hóa one-hot cho quận/huyện và loại nhà. {len(INPUT_COLS)} thuộc tính đầu vào trở thành
+   {len(TCOLS)} cột số.
+2. **Năm mô hình con** dự báo độc lập trên thang log1p của giá:
+   - *Ridge, Lasso, ElasticNet*: hồi quy tuyến tính có chính quy hóa; mỗi cột có một hệ số, dự báo là tổng có trọng số.
+   - *Gradient Boosting, LightGBM*: tổng của hàng trăm cây quyết định nhỏ; mỗi cây sửa phần sai số còn lại của các cây trước.
+3. **Mô hình meta** (RidgeCV) kết hợp năm dự báo con thành một dự báo bằng tổng có trọng số. Trọng số được học từ
+   dự báo ngoài fold, nên mô hình meta biết mô hình con nào đáng tin hơn.
+
+Cuối cùng, dự báo được đổi từ thang log1p về tỷ VNĐ: $\\text{{giá}} = e^{{\\hat{{y}}}} - 1$.
+""")
+    st.graphviz_chart("""
+digraph {
+  rankdir=LR; node [shape=box, style="rounded,filled", fillcolor="#EEF3FA", fontname="Helvetica", fontsize=11];
+  input [label="Thông số căn nhà\\n(14 thuộc tính)", fillcolor="#FFF4E0"];
+  prep [label="Tiền xử lý\\nđiền thiếu, chuẩn hóa,\\none-hot (42 cột)"];
+  r [label="Ridge"]; l [label="Lasso"]; e [label="ElasticNet"]; g [label="Gradient Boosting"]; b [label="LightGBM"];
+  meta [label="Mô hình meta RidgeCV\\ntổng có trọng số"];
+  inv [label="Đổi về tỷ VNĐ\\ne^y − 1"];
+  out [label="Giá dự báo\\n+ khoảng 95%", fillcolor="#E3F4E7"];
+  input -> prep; prep -> {r l e g b}; {r l e g b} -> meta; meta -> inv; inv -> out;
+}""")
+
+    st.subheader("Trọng số của mô hình meta")
+    w = pd.DataFrame({"Mô hình con": [MODEL_LABELS[n] for n in BASE_NAMES], "Trọng số": META_W})
+    params = {
+        "Ridge": ["alpha"], "Lasso": ["alpha"], "ElasticNet": ["alpha", "l1_ratio"],
+        "Gradient_Boosting": ["n_estimators", "learning_rate", "max_depth", "subsample"],
+        "LightGBM": ["n_estimators", "learning_rate", "num_leaves", "min_child_samples"],
+    }
+    w["Tham số (từ grid search)"] = [", ".join(f"{k}={est.get_params()[k]}" for k in params[n])
+                                     for n, est in zip(BASE_NAMES, STACK.estimators_)]
+    c1, c2 = st.columns([3, 2])
+    c1.dataframe(w.round(3), hide_index=True, width="stretch")
+    fig, ax = plt.subplots(figsize=(5, 2.8))
+    ax.barh(w["Mô hình con"], w["Trọng số"], color=["#C44E52" if v < 0 else "#4C72B0" for v in w["Trọng số"]])
+    ax.axvline(0, color="gray")
+    ax.set_title(f"Hệ số chặn của mô hình meta: {META_B:.3f}", fontsize=9)
+    plt.tight_layout()
+    c2.pyplot(fig)
+    st.markdown("Hai mô hình cây nhận khoảng 4/5 tổng trọng số: mô hình meta tin vào các mô hình học được quan hệ phi "
+                "tuyến. Trọng số của Lasso gần 0 (hơi âm) vì Lasso gần như trùng thông tin với Ridge và ElasticNet.")
+
+    st.header("5.2 Nội dung tệp `models/learnt.pkl`")
+    st.markdown("Tệp được lưu bằng `joblib` ở cuối mục 6.7 của notebook, và được cập nhật tham số khoảng dự báo ở mục 7.5.")
+    describe = {
+        "model": "Pipeline đầy đủ: tiền xử lý → Stacking → đổi về tỷ VNĐ. Gọi `predict()` trực tiếp trên dữ liệu thô",
+        "model_name": "Tên mô hình được chọn",
+        "features": "Danh sách thuộc tính đầu vào theo nhóm (số, nhị phân, phân loại)",
+        "district_coords": "Tọa độ, khoảng cách tới trung tâm và số tiện ích xung quanh của 39 quận/huyện",
+        "city_center": "Tọa độ mốc trung tâm của hai thành phố",
+        "target_transform": "Phép biến đổi biến mục tiêu đã dùng",
+        "cv_rmse": "RMSE cross-validation trên tập huấn luyện",
+        "trained_on": "Số bản ghi huấn luyện",
+        "interval": "Tham số khoảng dự báo 95% (phân vị phần dư q_lo, q_hi) và độ phủ trên tập kiểm thử",
+        "test_metrics": "RMSE, MAE, R², MAPE trên tập kiểm thử",
+    }
+    st.dataframe(pd.DataFrame([{"Khóa": k, "Kiểu": type(v).__name__, "Nội dung": describe.get(k, "")}
+                               for k, v in learnt.items()]), hide_index=True, width="stretch")
+
+    st.header("5.3 Đọc mô hình lên để dự báo")
+    st.code('''import joblib
+import numpy as np
+import pandas as pd
+
+learnt = joblib.load("models/learnt.pkl")
+coords = learnt["district_coords"]
+
+# Thông số căn nhà; vị trí và tiện ích lấy từ bảng quận/huyện
+loc = coords[(coords.city == "Hà Nội") & (coords.district == "Cầu Giấy")].iloc[0]
+house = pd.DataFrame([{
+    "area_m2": 50, "width_m": 4.5, "road_width_m": 3, "floors": 5, "has_parking": 0.0,
+    "district": "Cầu Giấy", "house_type": "Nhà trong hẻm",
+    **loc[["dist_center_km", "lat", "n_schools", "n_health", "n_markets", "n_parks", "n_transit"]],
+}])
+cols = learnt["features"]["num"] + learnt["features"]["bool"] + learnt["features"]["cat"]
+
+price = learnt["model"].predict(house[cols])[0]                  # tỷ VNĐ
+lo = np.expm1(np.log1p(price) + learnt["interval"]["q_lo"])      # cận dưới 95%
+hi = np.expm1(np.log1p(price) + learnt["interval"]["q_hi"])      # cận trên 95%
+print(f"{price:.2f} tỷ, khoảng 95%: {lo:.2f} – {hi:.2f} tỷ")''', language="python")
+
+    st.header("5.4 Minh họa từng bước tính trên một căn nhà thật")
+    st.markdown("Chọn một căn trong dữ liệu để xem mô hình tính ra giá như thế nào qua từng tầng.")
+    idx = st.number_input("Số thứ tự căn nhà trong `features.csv`", 0, len(features) - 1, 0)
+    row = features.iloc[[int(idx)]]
+    X = to_model_input(row)
+    Xt, base_log, final_log = decompose(X)
+
+    st.markdown("**Bước 1. Thông số đầu vào**")
+    st.dataframe(X, hide_index=True, width="stretch")
+    st.markdown("**Bước 2. Sau tiền xử lý** (chỉ hiện các cột khác 0)")
+    vec = pd.Series(Xt[0], index=TCOLS)
+    st.dataframe(vec[vec != 0].round(3).to_frame("giá trị").T, width="stretch")
+    st.markdown("**Bước 3. Dự báo của từng mô hình con và kết hợp ở mô hình meta**")
+    st.dataframe(stacking_table(base_log).round(3), hide_index=True, width="stretch")
+    terms = " + ".join(f"{w_:.3f}×{p:.3f}" for w_, p in zip(META_W, base_log))
+    st.markdown(f"Mô hình meta: $\\hat{{y}}$ = {META_B:.3f} + {terms} = **{final_log:.4f}**")
+    st.markdown(f"**Bước 4. Đổi về tỷ VNĐ:** $e^{{{final_log:.4f}}} - 1$ = **{np.expm1(final_log):.2f} tỷ**. "
+                f"Giá rao bán thực tế của căn này: **{row['price_billion_vnd'].iloc[0]:.2f} tỷ**.")
+    direct = float(learnt["model"].predict(X)[0])
+    st.caption(f"Kiểm tra: gọi trực tiếp `learnt['model'].predict()` cho {direct:.4f} tỷ, trùng với kết quả tính tay.")
+
+
+# ---------------------------------------------------------------------------
+# 6. Định giá trực tuyến
 # ---------------------------------------------------------------------------
 else:
     st.title("Định giá trực tuyến")
@@ -350,9 +571,7 @@ else:
             "has_terrace": float(terrace), "has_parking": float(parking),
             "city": city, "district": district, "house_type": house_type,
         }])
-        cols = learnt["features"]["num"] + learnt["features"]["bool"] + learnt["features"]["cat"]
-        X = X[cols].astype({c: float for c in learnt["features"]["num"] + learnt["features"]["bool"]})
-
+        X = to_model_input(X)
         pred = float(learnt["model"].predict(X)[0])
         iv = learnt["interval"]
         lo, hi = np.expm1(np.log1p(pred) + iv["q_lo"]), np.expm1(np.log1p(pred) + iv["q_hi"])
@@ -382,6 +601,43 @@ else:
                        "kết quả dự báo kém tin cậy.")
         if pred > 15:
             st.info("Mô hình có xu hướng định giá thấp nhà trên 15 tỷ (phân khúc ít mẫu); giá thực tế có thể cao hơn.")
+
+        st.subheader("Mô hình tính ra giá này như thế nào")
+        Xt, base_log, final_log = decompose(X)
+        st.markdown("**1. Năm mô hình con dự báo, mô hình meta kết hợp bằng tổng có trọng số** (thang log1p của giá)")
+        st.dataframe(stacking_table(base_log).round(3), hide_index=True, width="stretch")
+        st.markdown(f"Hệ số chặn {META_B:.3f} + tổng đóng góp {float(base_log @ META_W):.3f} = **{final_log:.4f}** → "
+                    f"$e^{{{final_log:.4f}}} - 1$ = **{np.expm1(final_log):.2f} tỷ**.")
+
+        st.markdown("**2. Mỗi thuộc tính đẩy giá lên hoặc xuống bao nhiêu** (giá trị SHAP)")
+        base, contrib = explain(Xt)
+        shown = {"area_m2": f"{area:g} m²", "road_width_m": f"{road:g} m", "floors": floors,
+                 "width_m": "không rõ" if width is None else f"{width:g} m", "house_type": house_type,
+                 "district": district, "dist_center_km": f"{row['dist_center_km']:.1f} km",
+                 "has_parking": "có" if parking else "không",
+                 **{c: int(row[c]) for c in AMENITY_COLS}}
+        fig, table = shap_waterfall(base, contrib, shown)
+        c1, c2 = st.columns([3, 2])
+        c1.pyplot(fig)
+        c2.dataframe(table.round(2), hide_index=True, width="stretch")
+        top = table.iloc[0]
+        st.markdown(f"""
+Mô hình bắt đầu từ **giá tham chiếu {np.expm1(base):.2f} tỷ** (mức giá của một căn "trung bình" trong dữ liệu),
+rồi cộng dần ảnh hưởng của từng thuộc tính. Thuộc tính tác động mạnh nhất là **{top['Thuộc tính']}**
+({top['Ảnh hưởng (%)']:+.0f}% so với căn trung bình). Màu xanh làm tăng giá, màu đỏ làm giảm giá.
+Tổng các đóng góp bằng đúng giá dự báo.
+""")
+        with st.expander("Cách tính giá trị SHAP cho mô hình Stacking"):
+            st.markdown("""
+- Dự báo của Stacking là tổng có trọng số của năm mô hình con, nên giá trị SHAP của Stacking bằng tổng có trọng số
+  giá trị SHAP của từng mô hình con (tính chất tuyến tính của giá trị Shapley).
+- Mô hình tuyến tính: SHAP của một cột = hệ số × (giá trị của căn − giá trị trung bình).
+- Mô hình cây: tính chính xác bằng `TreeExplainer`.
+- Cả hai cùng so với một nền chung gồm 300 căn trong dữ liệu. Các cột one-hot của quận/huyện và loại nhà được cộng
+  lại theo thuộc tính gốc.
+- Giá trị SHAP nằm trên thang log1p; biểu đồ cộng dần các giá trị này rồi đổi về tỷ VNĐ, nên phần đóng góp bằng tiền
+  phụ thuộc thứ tự cộng, còn cột "Ảnh hưởng (%)" thì không.
+""")
 
         st.subheader("Các căn tương tự trong dữ liệu")
         comps = features[(features["district"] == district) & (features["house_type"] == house_type)
