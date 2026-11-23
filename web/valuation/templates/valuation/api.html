@@ -1,0 +1,29 @@
+{% extends "valuation/base.html" %}
+{% block content %}
+<h3>API</h3>
+<p>API trả về JSON, không cần xác thực, chỉ dùng cho mục đích học tập và thử nghiệm.</p>
+<h5 class="mt-4"><span class="badge bg-success">GET</span> <code>/api/districts/?city=Hà Nội</code></h5>
+<p>Danh sách quận/huyện của một thành phố. <code>city</code>: {{ cities|join:" | " }}.</p>
+<h5 class="mt-4"><span class="badge bg-primary">POST</span> <code>/api/predict/</code></h5>
+<p>Dự báo giá. Thân yêu cầu là JSON. Thêm <code>?explain=0</code> để bỏ phần giải thích SHAP (nhanh hơn).</p>
+<table class="table table-sm w-auto">
+  <thead><tr><th>Trường</th><th>Kiểu</th><th>Bắt buộc</th><th>Miền giá trị</th></tr></thead>
+  <tbody>
+    <tr><td><code>city</code></td><td>chuỗi</td><td>có</td><td>{{ cities|join:" | " }}</td></tr>
+    <tr><td><code>district</code></td><td>chuỗi</td><td>có</td><td>quận/huyện thuộc thành phố</td></tr>
+    <tr><td><code>house_type</code></td><td>chuỗi</td><td>có</td><td>{{ house_types|join:" | " }}</td></tr>
+    <tr><td><code>area_m2</code></td><td>số</td><td>có</td><td>10 – 1000</td></tr>
+    <tr><td><code>road_width_m</code></td><td>số</td><td>có</td><td>0,5 – 60</td></tr>
+    <tr><td><code>floors</code></td><td>số nguyên</td><td>có</td><td>1 – 15</td></tr>
+    <tr><td><code>width_m</code></td><td>số</td><td>không</td><td>1 – 50</td></tr>
+    <tr><td><code>has_parking</code></td><td>logic</td><td>không</td><td>true | false</td></tr>
+  </tbody>
+</table>
+<h6>Ví dụ</h6>
+<pre class="bg-light p-3 rounded"><code>curl -X POST http://127.0.0.1:8000/api/predict/ \
+  -H "Content-Type: application/json" \
+  -d '{"city": "Hà Nội", "district": "Cầu Giấy", "house_type": "Nhà trong hẻm",
+       "area_m2": 50, "road_width_m": 3, "floors": 5}'</code></pre>
+<p>Kết quả gồm: <code>price_billion_vnd</code>, <code>interval_95</code>, <code>price_per_m2_million_vnd</code>, <code>location</code> (khoảng cách, tiện ích 2 km), <code>stacking</code> (dự báo của 5 mô hình con và trọng số), <code>explanation</code> (SHAP), <code>warnings</code>.</p>
+<p>Lỗi trả về mã 400 kèm <code>{"error": ..., "fields": {...}}</code>; thiếu tệp mô hình trả về 503.</p>
+{% endblock %}

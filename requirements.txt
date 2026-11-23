@@ -8,3 +8,4 @@ shap
 joblib
 jupyter
 streamlit
+django>=4.2,<5

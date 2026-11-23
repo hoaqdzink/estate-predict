@@ -1,0 +1,149 @@
+{% extends "valuation/base.html" %}{% load vn l10n %}
+{% block hero %}
+<section class="hero"><div class="container">
+  <h1>Định giá nhà ở Hà Nội và TP.HCM</h1>
+  <p>Nhập thông số căn nhà để nhận giá dự báo, khoảng dự báo 95% và giải thích vì sao mô hình đưa ra mức giá đó.</p>
+  <span class="chip"><i class="bi bi-cpu"></i> Mô hình Stacking</span>
+  <span class="chip"><i class="bi bi-database"></i> 2.819 tin rao</span>
+  <span class="chip"><i class="bi bi-geo-alt"></i> 39 quận/huyện</span>
+</div></section>
+{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-lg-4">
+    <div class="panel sticky-panel">
+      <div class="panel-head"><i class="bi bi-sliders"></i> Thông số căn nhà</div>
+      <form method="post" class="panel-body" novalidate>{% csrf_token %}
+        <div class="form-section">Vị trí</div>
+        <div class="row g-2 mb-3">
+          <div class="col-6"><label class="form-label" for="id_city">Thành phố</label>{{ form.city }}</div>
+          <div class="col-6"><label class="form-label" for="id_district">Quận/huyện</label>{{ form.district }}</div>
+          {% for e in form.district.errors %}<div class="col-12 text-danger small">{{ e }}</div>{% endfor %}
+        </div>
+        <label class="form-label">Loại nhà</label>
+        <div class="seg mb-3">
+          {% with v=form.house_type.value|default:"Nhà trong hẻm" %}
+          <input type="radio" name="house_type" id="ht1" value="Nhà trong hẻm" {% if v == "Nhà trong hẻm" %}checked{% endif %}><label for="ht1"><i class="bi bi-signpost-split"></i> Trong hẻm</label>
+          <input type="radio" name="house_type" id="ht2" value="Nhà mặt tiền" {% if v == "Nhà mặt tiền" %}checked{% endif %}><label for="ht2"><i class="bi bi-shop"></i> Mặt tiền</label>
+          {% endwith %}
+        </div>
+        <div class="form-section">Kích thước</div>
+        <div class="row g-2 mb-2">
+          {% for f in form %}{% if f.name in "area_m2 road_width_m floors width_m" %}
+          <div class="col-6">
+            <label class="form-label" for="{{ f.id_for_label }}">{{ f.label }}</label>{{ f }}
+            {% if f.help_text %}<div class="form-text">{{ f.help_text }}</div>{% endif %}
+            {% for e in f.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+          </div>
+          {% endif %}{% endfor %}
+        </div>
+        <div class="form-check form-switch my-3">{{ form.has_parking }} <label class="form-check-label" for="id_has_parking">Có chỗ đỗ ô tô</label></div>
+        <button class="btn btn-brand w-100" type="submit"><i class="bi bi-magic"></i> Định giá</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="col-lg-8">
+  {% if result %}
+    <div class="price-card mb-4">
+      <div class="d-flex flex-wrap justify-content-between gap-3">
+        <div>
+          <div class="label">Giá dự báo</div>
+          <div class="value">{{ result.price_billion_vnd|vn }} tỷ</div>
+          <div class="sub">{{ form.cleaned_data.house_type }} · {{ form.cleaned_data.district }}, {{ form.cleaned_data.city }} · {{ form.cleaned_data.area_m2|vn:0 }} m² · {{ form.cleaned_data.floors }} tầng</div>
+        </div>
+        <div class="text-md-end">
+          <div class="label">Đơn giá</div>
+          <div class="value" style="font-size:1.7rem">{{ result.price_per_m2_million_vnd|vn:0 }} tr/m²</div>
+        </div>
+      </div>
+      <div class="range"><div class="fill" style="left:0;right:0"></div><div class="dot" style="left:{{ result.range_pos|unlocalize }}%"></div></div>
+      <div class="range-labels"><span>{{ result.interval_95.low|vn }} tỷ</span><span>Khoảng dự báo 95%</span><span>{{ result.interval_95.high|vn }} tỷ</span></div>
+    </div>
+
+    {% for w in result.warnings %}<div class="alert-soft mb-3"><i class="bi bi-exclamation-triangle"></i> {{ w }}</div>{% endfor %}
+
+    <div class="row g-3 mb-4">
+      <div class="col-sm-4"><div class="kpi"><div class="k"><i class="bi bi-pin-map"></i> Cách trung tâm</div><div class="v">{{ result.location.dist_center_km|vn:1 }} km</div></div></div>
+      <div class="col-sm-4"><div class="kpi"><div class="k"><i class="bi bi-bullseye"></i> Độ phủ kiểm chứng</div><div class="v">{% widthratio result.interval_95.test_coverage 1 100 %}%</div></div></div>
+      <div class="col-sm-4"><div class="kpi"><div class="k"><i class="bi bi-houses"></i> Căn tương tự</div><div class="v">{{ comps.count }}</div></div></div>
+    </div>
+
+    <div class="panel mb-4">
+      <div class="panel-head"><i class="bi bi-bar-chart-steps"></i> Vì sao ra mức giá này</div>
+      <div class="panel-body">
+        <p class="text-muted small">Bắt đầu từ giá tham chiếu <b>{{ result.explanation.base_price_billion_vnd|vn }} tỷ</b> (căn "trung bình" trong dữ liệu), mỗi thuộc tính đẩy giá lên (xanh) hoặc xuống (đỏ).</p>
+        {% for c in result.explanation.contributions|slice:":10" %}
+        <div class="shap-row">
+          <div>{{ c.label }}</div>
+          <div class="shap-track"><div class="axis"></div><div class="shap-bar {% if c.shap_log1p < 0 %}neg{% else %}pos{% endif %}" style="width:{{ c.bar|unlocalize }}%"></div></div>
+          <div class="effect {% if c.shap_log1p < 0 %}neg{% else %}pos{% endif %}">{% if c.effect_percent > 0 %}+{% endif %}{{ c.effect_percent|vn:1 }}%</div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+      <div class="col-md-7">
+        <div class="panel h-100">
+          <div class="panel-head"><i class="bi bi-diagram-3"></i> Stacking kết hợp 5 mô hình con</div>
+          <div class="panel-body">
+            <table class="table table-clean">
+              <thead><tr><th>Mô hình con</th><th class="text-end">Dự báo</th><th style="width:30%">Trọng số</th></tr></thead>
+              <tbody>{% for m in result.stacking.base_models %}
+                <tr><td>{{ m.name }}</td><td class="text-end">{{ m.pred_billion_vnd|vn }} tỷ</td>
+                  <td><div class="d-flex align-items-center gap-2"><div class="weight-bar flex-grow-1"><span style="width:{{ m.wbar|unlocalize }}%"></span></div><small>{{ m.weight|vn:2 }}</small></div></td></tr>
+              {% endfor %}</tbody>
+            </table>
+            <p class="small text-muted mt-3 mb-0">ŷ = {{ result.stacking.intercept|vn:3 }} + Σ trọng số × dự báo con (thang log1p) = {{ result.stacking.final_log1p|vn:4 }} → giá = e<sup>ŷ</sup> − 1 = <b>{{ result.price_billion_vnd|vn }} tỷ</b></p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-5">
+        <div class="panel h-100">
+          <div class="panel-head"><i class="bi bi-geo-alt"></i> Tiện ích trong bán kính 2 km</div>
+          <div class="panel-body py-2">
+            {% for a in result.amenities %}<div class="amen"><span class="ic"><i class="bi {{ a.icon }}"></i></span>{{ a.name }}<span class="n">{{ a.value }}</span></div>{% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><i class="bi bi-houses"></i> Các căn tương tự trong dữ liệu</div>
+      <div class="panel-body">
+      {% if comps.count %}
+        <p class="small text-muted">{{ comps.count }} căn cùng quận, cùng loại nhà, diện tích ±30%. Giá trung vị <b>{{ comps.median_price|vn }} tỷ</b>.</p>
+        <table class="table table-clean table-hover">
+          <thead><tr><th>Diện tích</th><th>Đường</th><th>Số tầng</th><th class="text-end">Giá</th><th class="text-end">Giá/m²</th></tr></thead>
+          <tbody>{% for r in comps.rows %}<tr><td>{{ r.area_m2|vn:0 }} m²</td><td>{{ r.road_width_m|vn:1 }} m</td><td>{{ r.floors|vn:0 }}</td><td class="text-end">{{ r.price_billion_vnd|vn }} tỷ</td><td class="text-end">{{ r.ppm2|vn:0 }} tr</td></tr>{% endfor %}</tbody>
+        </table>
+      {% else %}<p class="text-muted mb-0">Không có căn tương tự trong dữ liệu.</p>{% endif %}
+      </div>
+    </div>
+    <div class="note mt-4"><i class="bi bi-info-circle"></i> Giá dự báo áp dụng cho nhà có giấy tờ pháp lý đầy đủ. Dữ liệu là giá rao bán trước 01/2022.</div>
+  {% else %}
+    <div class="panel empty-state">
+      <div class="big"><i class="bi bi-house-gear"></i></div>
+      <h4 class="fw-bold">Bắt đầu định giá</h4>
+      <p class="text-muted mb-0">Điền thông số ở khung bên trái rồi bấm <b>Định giá</b>.</p>
+      <div class="feature-list">
+        <div><i class="bi bi-check-circle-fill"></i> Giá dự báo và khoảng dự báo 95%</div>
+        <div><i class="bi bi-check-circle-fill"></i> Mức ảnh hưởng của từng thuộc tính lên giá (SHAP)</div>
+        <div><i class="bi bi-check-circle-fill"></i> Cách mô hình Stacking kết hợp 5 mô hình con</div>
+        <div><i class="bi bi-check-circle-fill"></i> Tiện ích xung quanh và các căn tương tự</div>
+      </div>
+    </div>
+  {% endif %}
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+document.getElementById("id_city").addEventListener("change", async (e) => {
+  const r = await fetch("{% url 'api_districts' %}?city=" + encodeURIComponent(e.target.value));
+  const data = await r.json();
+  document.getElementById("id_district").innerHTML = data.districts.map(d => `<option value="${d}">${d}</option>`).join("");
+});
+</script>
+{% endblock %}

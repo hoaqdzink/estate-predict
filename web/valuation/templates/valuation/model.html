@@ -1,0 +1,35 @@
+{% extends "valuation/base.html" %}{% load vn %}
+{% block content %}
+<h3 class="mb-3">Mô hình {{ s.name }} Ensemble</h3>
+<div class="row g-3 mb-4">
+  <div class="col-md-3"><div class="stat"><div class="stat-label">RMSE kiểm thử</div><div class="stat-value">{{ s.test_metrics.RMSE|vn }} tỷ</div></div></div>
+  <div class="col-md-3"><div class="stat"><div class="stat-label">MAE kiểm thử</div><div class="stat-value">{{ s.test_metrics.MAE|vn }} tỷ</div></div></div>
+  <div class="col-md-3"><div class="stat"><div class="stat-label">R² kiểm thử</div><div class="stat-value">{{ s.test_metrics|get_item:"R²"|vn:3 }}</div></div></div>
+  <div class="col-md-3"><div class="stat"><div class="stat-label">Độ phủ khoảng 95%</div><div class="stat-value">{{ s.interval.test_coverage|vn:3 }}</div></div></div>
+</div>
+<div class="row g-4">
+  <div class="col-lg-7">
+    <div class="card shadow-sm"><div class="card-header fw-semibold">So sánh mô hình trên tập kiểm thử</div>
+      <div class="card-body"><table class="table table-sm table-hover mb-0">
+        <thead><tr><th>Mô hình</th><th class="text-end">RMSE</th><th class="text-end">MAE</th><th class="text-end">MAPE (%)</th><th class="text-end">CV RMSE</th></tr></thead>
+        <tbody>{% for m in s.metrics %}<tr {% if m|get_item:"Mô hình" == s.name %}class="table-primary"{% endif %}>
+          <td>{{ m|get_item:"Mô hình" }}</td><td class="text-end">{{ m.RMSE|vn:3 }}</td><td class="text-end">{{ m.MAE|vn:3 }}</td>
+          <td class="text-end">{{ m|get_item:"MAPE (%)"|vn:1 }}</td><td class="text-end">{{ m|get_item:"CV RMSE"|vn:3 }}</td></tr>{% endfor %}</tbody>
+      </table></div></div>
+  </div>
+  <div class="col-lg-5">
+    <div class="card shadow-sm mb-3"><div class="card-header fw-semibold">Trọng số mô hình meta</div>
+      <ul class="list-group list-group-flush">{% for w in s.weights %}
+        <li class="list-group-item d-flex justify-content-between"><span>{{ w.name }}</span><b>{{ w.weight|vn:3 }}</b></li>{% endfor %}
+        <li class="list-group-item d-flex justify-content-between text-muted"><span>Hệ số chặn</span><span>{{ s.intercept|vn:3 }}</span></li>
+      </ul></div>
+    <div class="card shadow-sm"><div class="card-header fw-semibold">Thuộc tính đầu vào</div>
+      <div class="card-body small">
+        <p class="mb-1"><b>Số:</b> {{ s.features.num|join:", " }}</p>
+        <p class="mb-1"><b>Nhị phân:</b> {{ s.features.bool|join:", " }}</p>
+        <p class="mb-0"><b>Phân loại:</b> {{ s.features.cat|join:", " }}</p>
+        <p class="text-muted mt-2 mb-0">Huấn luyện trên {{ s.trained_on }} bản ghi. Phân tích chi tiết có trong ứng dụng Streamlit và notebook.</p>
+      </div></div>
+  </div>
+</div>
+{% endblock %}

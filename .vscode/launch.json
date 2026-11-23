@@ -20,6 +20,19 @@
       ],
       "cwd": "${workspaceFolder}",
       "console": "integratedTerminal"
+    },
+    {
+      "name": "Mở web Django",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/web/manage.py",
+      "args": [
+        "runserver",
+        "127.0.0.1:8000"
+      ],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "django": true
     }
   ]
 }
