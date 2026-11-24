@@ -18,7 +18,7 @@ Dự án gồm ba phần, dùng chung một mô hình (`models/learnt.pkl`):
 
 ```bash
 python3.14 -m venv .venv && source .venv/bin/activate   # tạo và bật môi trường ảo (Python 3.14)
-pip install -r requirements.txt                          # cài thư viện
+pip install -r requirements-dev.txt                      # cài thư viện
 jupyter nbconvert --to notebook --execute notebooks/01_cleaning.ipynb --inplace --ExecutePreprocessor.timeout=1800
 streamlit run app/streamlit_app.py                       # http://localhost:8501
 python web/manage.py runserver                           # http://127.0.0.1:8000 (mở Terminal khác)
@@ -84,7 +84,7 @@ Khi môi trường ảo được kích hoạt, đầu dòng lệnh hiện `(.ven
 
 ```bash
 pip install --upgrade pip
-pip install -r requirements.txt
+pip install -r requirements-dev.txt
 ```
 
 ### Bước 4. Kiểm tra cài đặt
@@ -209,6 +209,8 @@ Kiểm thử: `python web/manage.py test valuation` (10 kiểm thử: trang, ki�
 
 Khi triển khai thật, đặt `DJANGO_DEBUG=0`, `DJANGO_SECRET_KEY` và `DJANGO_ALLOWED_HOSTS`; khóa mặc định chỉ dùng khi phát triển.
 
+**Triển khai lên Vercel:** import repo trên Vercel, giữ Root Directory là thư mục gốc. Vercel tự nhận Django qua `web/manage.py`, cài thư viện từ `requirements.txt` và dùng Python theo `.python-version` (3.14). Ở **Settings → Environment Variables** đặt `DJANGO_DEBUG=0` và `DJANGO_SECRET_KEY` (chuỗi ngẫu nhiên dài). Tên miền `*.vercel.app` được cho phép sẵn; tên miền riêng thì thêm vào `DJANGO_ALLOWED_HOSTS`. Vercel chỉ chạy được web Django; ứng dụng Streamlit vẫn triển khai trên Streamlit Community Cloud.
+
 ---
 
 ## 6. Xử lý lỗi thường gặp
@@ -219,7 +221,7 @@ Khi triển khai thật, đặt `DJANGO_DEBUG=0`, `DJANGO_SECRET_KEY` và `DJANG
 | `Library not loaded: @rpath/libomp.dylib` (macOS) | Thiếu OpenMP cho LightGBM. Chạy `brew install libomp`. |
 | `ModuleNotFoundError` | Môi trường ảo chưa được kích hoạt, hoặc notebook dùng sai kernel. Kích hoạt `.venv` (mục 2, bước 2) và chọn kernel `.venv` trong notebook. |
 | `command not found: streamlit`, `jupyter` hoặc `ModuleNotFoundError: django` | Môi trường ảo chưa được kích hoạt. Hoặc chạy trực tiếp `.venv/bin/streamlit run app/streamlit_app.py`. |
-| Lỗi khi nạp `learnt.pkl` (`ModuleNotFoundError`, `AttributeError` trong sklearn) | Phiên bản thư viện khác với lúc huấn luyện. Cài đúng `requirements.txt` trên Python 3.14, hoặc chạy lại notebook để huấn luyện lại bằng thư viện hiện có. |
+| Lỗi khi nạp `learnt.pkl` (`ModuleNotFoundError`, `AttributeError` trong sklearn) | Phiên bản thư viện khác với lúc huấn luyện. Cài đúng `requirements-dev.txt` trên Python 3.14, hoặc chạy lại notebook để huấn luyện lại bằng thư viện hiện có. |
 | Build trên Streamlit Cloud rất lâu, log có dòng `Building numpy`, `Building scipy`... | App được tạo với bản Python khác 3.14. Xóa app và tạo lại, giữ Python 3.14 ở Advanced settings. |
 | Notebook báo lỗi ở một ô giữa chừng | Các ô phải chạy tuần tự. Chọn *Restart Kernel* rồi *Run All*. |
 | `Address already in use` / cổng 8501 hoặc 8000 đang bận | Ứng dụng đã chạy ở Terminal khác. Mở thẳng địa chỉ trên trình duyệt, hoặc dừng tiến trình cũ, hoặc chạy cổng khác: `streamlit run app/streamlit_app.py --server.port 8502`, `python web/manage.py runserver 8001`. |
@@ -252,7 +254,8 @@ estate-predict/
 │   ├── estate_web/                     # Cấu hình Django
 │   └── valuation/                      # Dịch vụ dự báo, form, giao diện, API, kiểm thử
 ├── reports/                            # Do notebook tạo ra
-├── requirements.txt
+├── requirements.txt                    # Thư viện cho web Django (Vercel)
+├── requirements-dev.txt                # Toàn bộ thư viện để chạy dự án trên máy
 ├── .gitignore
 └── README.md
 ```

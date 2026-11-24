@@ -21,3 +21,6 @@ models/*
 reports/*
 !reports/artifacts.pkl
 !reports/cleaning_log.csv
+
+# Django collectstatic
+web/staticfiles/

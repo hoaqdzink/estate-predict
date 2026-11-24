@@ -1,0 +1,5 @@
+# Toàn bộ dự án (notebook, Streamlit, Django), Python 3.14.
+-r requirements.txt
+-r app/requirements.txt
+jupyter
+ipykernel

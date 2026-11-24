@@ -1,5 +1,12 @@
-# Toàn bộ dự án (notebook, Streamlit, Django), Python 3.14.
--r app/requirements.txt
-jupyter
-ipykernel
+# Thư viện cho web Django (triển khai Vercel), Python 3.14.
+# Vercel không đọc được dòng "-r", nên tệp này liệt kê trực tiếp từng thư viện.
+# Phiên bản trùng app/requirements.txt để models/learnt.pkl nạp lại được.
 django>=5.2,<7
+pandas==3.1.1
+numpy==2.5.5
+scipy==1.18.1
+scikit-learn==1.9.1
+lightgbm==4.7.0
+shap==0.54.1
+matplotlib==3.11.2
+joblib==1.6.0

@@ -17,6 +17,10 @@ SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY") or ("dev-only-insecure-key" if 
 if not SECRET_KEY:
     raise RuntimeError("Cần đặt biến môi trường DJANGO_SECRET_KEY khi DJANGO_DEBUG=0")
 ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+if os.environ.get("VERCEL"):  # Vercel tự đặt biến này khi build và chạy
+    ALLOWED_HOSTS.append(".vercel.app")
+    # Vercel nhận HTTPS rồi chuyển tiếp vào hàm; cần để kiểm tra CSRF của form hoạt động
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 INSTALLED_APPS = [
     "django.contrib.staticfiles",
@@ -43,6 +47,7 @@ TIME_ZONE = "Asia/Ho_Chi_Minh"
 USE_I18N = True
 USE_TZ = True
 STATIC_URL = "static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"  # Vercel chạy collectstatic vào đây và phục vụ qua CDN
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Đường dẫn tới các tệp do notebook tạo ra
