@@ -49,6 +49,13 @@ USE_TZ = True
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"  # Vercel chạy collectstatic vào đây và phục vụ qua CDN
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+# Ghi lỗi ra stderr cả khi DEBUG=0, để xem được traceback trong log của Vercel
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {"console": {"class": "logging.StreamHandler"}},
+    "loggers": {"django.request": {"handlers": ["console"], "level": "ERROR"}},
+}
 
 # Đường dẫn tới các tệp do notebook tạo ra
 MODEL_PATH = PROJECT_ROOT / "models" / "learnt.pkl"
