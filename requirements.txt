@@ -3,7 +3,6 @@
 # Phiên bản trùng app/requirements.txt để models/learnt.pkl nạp lại được.
 django>=5.2,<7
 pandas==3.1.1
-pyarrow==26.0.1  # cần để nạp models/learnt.pkl (dữ liệu pandas dạng Arrow)
 numpy==2.5.5
 scipy==1.18.1
 scikit-learn==1.9.1
